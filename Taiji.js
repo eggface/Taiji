@@ -67,7 +67,8 @@ function createNode(node) {
 
 function nodeToString(level) {
     if (null == level) {
-        p(this.name + ":");
+        p("");
+        p(this.name + ": name (type)");
         level = 0;
     }
     var prefix = "";
@@ -92,9 +93,54 @@ function nodeAddSubs(subNode) {
 var drProf = createNode({name: "data-rate-profile", type: "grouping"});
 var maxndr = createNode({name: "maxndr", type: "leaf"});
 var minetr = createNode({name: "minetr", type: "leaf"});
+var uint32 = createNode({name: "uint32", type: "type"});
 
 drProf.nodeAddSubs(maxndr);
 drProf.nodeAddSubs(minetr);
 
+maxndr.nodeAddSubs(uint32);
+minetr.nodeAddSubs(uint32);
+
 drProf.nodeToString();
+
+//
+//*******************************************************************************************//
+//
+pTips("Here is the place to convert yang object to schema file.");
+//Schemas.dataRateProfile = new SimpleSchema({
+//    maxndr: {
+//        type: Number,
+pTips("type = first level key type, it should be new as a Schema object"); 
+pTips("type = 'leaf': name {}"); 
+pTips("type = 'type': mapping to schema type"); 
+pTips("All nodes should end with ',', if it is not the last one."); 
+var key_1_words= ["grouping"];
+//var type_mapping_yang_schema = [
+//    //{yang_type: "uint32", schema_type: "Number"}
+//    {yang_type: "uint32", schema_type: "Number"}
+//]
+var type_mapping_yang_schema = new Map([
+    ["uint32", "Number"]
+])
+
+//function getSchemaType(yang_type){
+//    p("Try to map yang type: " + yang_type);
+//    var i;
+//    for(i = 0; i < type_mapping_yang_schema.length; i++){
+//        //p("i:" + i + ", yang_type:" + type_mapping_yang_schema[i].yang_type  + ", schema_type:" + type_mapping_yang_schema[i].schema_type);
+//        if(yang_type == type_mapping_yang_schema[i].yang_type){
+//            return type_mapping_yang_schema[i].schema_type;
+//        }
+//    }
+//}
+p("Test to get uint32's schema type: " + type_mapping_yang_schema.get("uint32"));
+//var map = new Map();
+//map.set("name", "Nicholas"); 
+//map.set("book", "Professional JavaScript");
+//console.log(map.has("name")); //true 
+//console.log(map.get("name")); //”Nicholas”
+//map.delete("name");
+
+
+
 
