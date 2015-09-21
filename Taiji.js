@@ -1,5 +1,9 @@
 var dir = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/";
 
+var TYPE_LEAF = "leaf";
+var TYPE_TYPE = "type";
+var OUTPUT_INDENT = "    ";
+
 function p(msg) {
     console.log(msg);
 }
@@ -93,13 +97,19 @@ function nodeAddSubs(subNode) {
 var drProf = createNode({name: "data-rate-profile", type: "grouping"});
 var maxndr = createNode({name: "maxndr", type: "leaf"});
 var minetr = createNode({name: "minetr", type: "leaf"});
+var mingdr = createNode({name: "mingdr", type: "leaf"});
+var maxgdr = createNode({name: "maxgdr", type: "leaf"});
 var uint32 = createNode({name: "uint32", type: "type"});
 
 drProf.nodeAddSubs(maxndr);
 drProf.nodeAddSubs(minetr);
+drProf.nodeAddSubs(maxgdr);
+drProf.nodeAddSubs(mingdr);
 
 maxndr.nodeAddSubs(uint32);
 minetr.nodeAddSubs(uint32);
+mingdr.nodeAddSubs(uint32);
+maxgdr.nodeAddSubs(uint32);
 
 drProf.nodeToString();
 
@@ -110,37 +120,139 @@ pTips("Here is the place to convert yang object to schema file.");
 //Schemas.dataRateProfile = new SimpleSchema({
 //    maxndr: {
 //        type: Number,
-pTips("type = first level key type, it should be new as a Schema object"); 
-pTips("type = 'leaf': name {}"); 
-pTips("type = 'type': mapping to schema type"); 
-pTips("All nodes should end with ',', if it is not the last one."); 
-var key_1_words= ["grouping"];
-//var type_mapping_yang_schema = [
-//    //{yang_type: "uint32", schema_type: "Number"}
-//    {yang_type: "uint32", schema_type: "Number"}
-//]
+pTips("type = first level key type, it should be new as a Schema object");
+pTips("type = 'leaf': name {}");
+pTips("type = 'type': mapping to schema type");
+pTips("All nodes should end with ',', if it is not the last one.");
+p("");
+//var key_1_words= ["grouping"];
+var key_1_words = new Set();
+key_1_words.add("grouping");
+
 var type_mapping_yang_schema = new Map([
     ["uint32", "Number"]
 ])
 
-//function getSchemaType(yang_type){
-//    p("Try to map yang type: " + yang_type);
-//    var i;
-//    for(i = 0; i < type_mapping_yang_schema.length; i++){
-//        //p("i:" + i + ", yang_type:" + type_mapping_yang_schema[i].yang_type  + ", schema_type:" + type_mapping_yang_schema[i].schema_type);
-//        if(yang_type == type_mapping_yang_schema[i].yang_type){
-//            return type_mapping_yang_schema[i].schema_type;
-//        }
-//    }
-//}
-p("Test to get uint32's schema type: " + type_mapping_yang_schema.get("uint32"));
-//var map = new Map();
-//map.set("name", "Nicholas"); 
-//map.set("book", "Professional JavaScript");
-//console.log(map.has("name")); //true 
-//console.log(map.get("name")); //”Nicholas”
-//map.delete("name");
+if (key_1_words.has("grouping")) {
+    p("grouping is in set.");
+}
+//p("Test to get uint32's schema type: " + type_mapping_yang_schema.get("uint32"));
+
+function yangType2SchemaType(type) {
+    //p("Gonna convert YANG type to Schema type with type mapping. Yang type is: " + type);
+    return type_mapping_yang_schema.get(type);
+}
+
+function yangName2SchemaName(name) {
+    //p("Gonna convert YANG with removing '-' and change to CamelStyle. Yang name is: " + name);
+    return name.replace(/-./gi, function upper(x) {
+        return x.slice(1).toUpperCase();
+    });
+}
+//p(yangName2SchemaName("abc-def-ghi"));
+
+function yang2Schema(node, level) {
+    if (null == level) {
+        level = 0;
+    }
+    //p("Convert YANG node to Schema JS. node name is: " + node.name + " and level is: " + level);
+
+//Schemas.dataRateProfile = new SimpleSchema({
+//    maxndr: {
+//        type: Number,
+
+    var prefix = "";
+    var j;
+    for (j = 0; j < level; j++) {
+        prefix = prefix + OUTPUT_INDENT;
+    }
+
+    var output = "";
+    if (0 == level) {
+        level = 0;
+        output += "Schemas." + yangName2SchemaName(node.name) + " = new SimpleSchema({\n";
+    } else if (TYPE_LEAF == node.type) {
+        //display node attributes, name and type
+        //leaf
+        output += prefix + yangName2SchemaName(node.name) + ": {\n"
+    } else if (TYPE_TYPE == node.type) {
+        //type
+        output += prefix + "type: " + yangType2SchemaType(node.name) + ",\n"
+    }
+
+    var i;
+    level++;
+    for (i = 0; i < node.subNodes.length; i++) {
+        output += yang2Schema(node.subNodes[i], level);
+    }
+    //remove the last ','
+    if ("," == output.charAt(output.length - 2)) {
+        output = output.substring(0, output.length - 2);
+        output += "\n";
+    }
+
+    output += prefix + "}";
+    if (0 == level) {
+        output += "\n";
+    } else {
+        output += ",\n";
+    }
+    return output;
+}
+p(yang2Schema(drProf));
+
+//
+//*******************************************************************************************//
+//
+pTips("Here is the place to convert yang object to schema html template.");
+p("");
+//<body>
+//    <div class="container">
+//      <h2>Bandwidth Profile Provisioning</h2>
+//      {{> dataRateProfileForm}}
+//    </div>
+//</body>
+//<template name="dataRateProfileForm">
+//    {{#autoForm id="dataRateProfileForm" schema=Schemas.dataRateProfile}}
+//        {{> afQuickField name="maxndr"}}
+//        {{> afQuickField name="minetr"}}
+//        {{> afQuickField name="maxgdr"}}
+//        {{> afQuickField name="mingdr"}}
+//      <div>
+//        <button type="submit" id="testRestSubmit" class="btn btn-primary">Submit</button>
+//      </div>
+//    {{/autoForm}}
+//</template>
+
+function yang2Template(node) {
+    pErr("It is just a draft for simple, one layer structure. No further check.");
+    var output = "";
+    var schema_name = yangName2SchemaName(node.name);
+    var template_name = yangName2SchemaName(node.name) + "Form";
+
+    output = "<body>\n\
+    <div class=\"container\">\n\
+      <h2>" + schema_name + "</h2>\n\
+      {{>  " + template_name + " }}\n\
+    </div>\n\
+</body>\n\
+<template name=\"" + template_name + "\">\n\
+    {{#autoForm id=\"" + template_name + "\" schema=Schemas." + schema_name + "}}\n";
+
+    var i;
+    for (i = 0; i < node.subNodes.length; i++) {
+        output += "        {{> afQuickField name=\"" + node.subNodes[i].name + "\"}}\n"
+    }
 
 
+    output += "      <div>\n\
+        <button type=\"submit\" id=\"click" + template_name + "Submit\" class=\"btn btn-primary\">Submit</button>\n\
+      </div>\n\
+    {{/autoForm}}\n\
+</template>\n"
+
+    return output;
+}
+p(yang2Template(drProf));
 
 
