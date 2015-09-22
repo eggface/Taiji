@@ -3,7 +3,20 @@ var dir = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/";
 var TYPE_LEAF = "leaf";
 var TYPE_TYPE = "type";
 var OUTPUT_INDENT = "    ";
+var BON = "{";
+var EON = "}";
 
+var key_words = new Set();
+key_words.add("grouping");
+key_words.add(TYPE_LEAF);
+key_words.add(TYPE_TYPE);
+
+var type_mapping_yang_schema = new Map([
+    ["uint32", "Number"]
+])
+//
+//*******************************************************************************************//
+//
 function p(msg) {
     console.log(msg);
 }
@@ -16,6 +29,9 @@ function pErr(msg) {
     console.log('\x1b[41m', msg, '\x1b[0m');
 }
 
+//
+//*******************************************************************************************//
+//
 pTips("This is Taiji used to interpret YANG");
 
 function write(file, str) {
@@ -63,13 +79,13 @@ function createNode(node) {
     obj.subNodes = new Array();
 
     //Link to functions
-    obj.nodeToString = nodeToString;
+    obj.display = display;
     obj.nodeAddSubs = nodeAddSubs;
 
     return obj;
 }
 
-function nodeToString(level) {
+function display(level) {
     if (null == level) {
         p("");
         p(this.name + ": name (type)");
@@ -82,10 +98,12 @@ function nodeToString(level) {
     }
 
     p(prefix + "|" + this.name + " (" + this.type + ")");
-    var i;
-    level++;
-    for (i = 0; i < this.subNodes.length; i++) {
-        this.subNodes[i].nodeToString(level);
+    if(null != this.subNodes && this.subNodes.length > 0){
+        var i;
+        level++;
+        for (i = 0; i < this.subNodes.length; i++) {
+            this.subNodes[i].display(level);
+        }
     }
 }
 
@@ -111,7 +129,7 @@ minetr.nodeAddSubs(uint32);
 mingdr.nodeAddSubs(uint32);
 maxgdr.nodeAddSubs(uint32);
 
-drProf.nodeToString();
+//drProf.display();
 
 //
 //*******************************************************************************************//
@@ -125,18 +143,6 @@ pTips("type = 'leaf': name {}");
 pTips("type = 'type': mapping to schema type");
 pTips("All nodes should end with ',', if it is not the last one.");
 p("");
-//var key_1_words= ["grouping"];
-var key_1_words = new Set();
-key_1_words.add("grouping");
-
-var type_mapping_yang_schema = new Map([
-    ["uint32", "Number"]
-])
-
-if (key_1_words.has("grouping")) {
-    p("grouping is in set.");
-}
-//p("Test to get uint32's schema type: " + type_mapping_yang_schema.get("uint32"));
 
 function yangType2SchemaType(type) {
     //p("Gonna convert YANG type to Schema type with type mapping. Yang type is: " + type);
@@ -254,5 +260,156 @@ function yang2Template(node) {
     return output;
 }
 p(yang2Template(drProf));
+
+
+//
+//*******************************************************************************************//
+//
+pTips("Here is the place for YANG Interpreter");
+p("");
+var input_yang = "grouping data-rate-profile {\n\
+  \n\
+    description [Data rate profile for upstream and downstream];\n\
+\n\
+    leaf maxndr {\n\
+      type uint32 {\n\
+        range [0..4294967295];\n\
+        }\n\
+      description\n\
+        [Maximum Net Data Rate (MAXNDR)\n\
+         Defines the value of the maximum net data rate (see clause\n\
+         11.4.2.2/G.9701).\n\
+         Valid values = 0..4294967295];\n\
+      units [1000 bits/second];\n\
+      default [4294967295];\n\
+    }\n\
+    leaf minetr {\n\
+      type uint32 {\n\
+        range 0..4294967295;\n\
+        }\n\
+      description\n\
+        Minimum Expected Throughput (MINETR)\n\
+         Defines the value of the minimum expected throughput (see\n\
+         clause 11.4.2.1/G.9701).\n\
+         Valid values = 0..4294967295;\n\
+      units 1000 bits/second;\n\
+      default 0;\n\
+      //reference ITU-T G.9701 clause 11.4.2.1;\n\
+    }\n\
+\n\
+    leaf maxgdr {\n\
+      type uint32 {\n\
+        range 0..4294967295;\n\
+        }\n\
+      description\n\
+        Maximum Gamma Data Rate (MAXGDR)\n\
+         Defines the maximum value of the GDR (see clause\n\\n\
+         7.11.1.3). The GDR shall not exceed MAXGDR at the start of\n\
+         showtime and during showtime.\n\
+         Valid values = 0..4294967295;\n\
+      units 1000 bits/second;\n\
+      default 4294967295;\n\
+      //reference None;\n\
+    }\n\
+\n\
+    leaf mingdr {\n\
+      type uint32 {\n\
+        range 0..4294967295;\n\
+        }\n\
+      description\n\
+        Minimum Gamma Data Rate (MINGDR)\n\
+         Defines the minimum value of the GDR (see clause\n\
+         7.11.1.3). The GDR may be lower than MINGDR. If the GDR is\n\
+         lower than MINGDR at initialization or when GDR becomes\n\
+         lower than MINGDR during showtime, a threshold crossing\n\
+         alert occurs.\n\
+         Valid values = 0..4294967295;\n\
+      units 1000 bits/second;\n\
+      default 0;\n\
+      //reference None;\n\
+    } ";
+
+function yangInterpreter(yang){
+    pTips("Assusme input yang string without comments for now: \n" + yang); 
+
+    pTips("Push words from String into array without comments. (// to the End OF the line. or /* to */)");
+
+    //Accepted elements: [ Words \ { } " ; \n]
+    var ele = yang.match(/\b\S+\b|\{|\}|\"|;|\n/g);
+    p("Counts of ele: " + ele.length);
+    var i;
+    for(i = 0; i < ele.length; i++){
+        p(ele[i]);
+    }
+
+    pTips("Shrink Words.");
+    shrinkWords(ele);
+
+    pTips("Go through words and generate nodes and sub-nodes");
+    var index = 0;
+    var root_node = createNode({name: "root", type: "root"});
+    parseNode(ele, root_node, index);
+
+    root_node.display();
+}
+
+function isKeyWord(word){
+    if (key_words.has(word)) {
+        //p(word + " is defined as Key words.");
+        return true;
+    }
+    return false;
+}
+
+//p("Test to get uint32's schema type: " + type_mapping_yang_schema.get("uint32"));
+//BON: Begin of the node, {
+//EON: End of the node, }
+function parseNode(eleAry, the_node, index_begin){
+    //pTips("Gonna parse Node from index: " + index_begin);
+    //pTips("It is a recursive call.");
+    var index_end = index_begin;
+    
+    var index = index_begin;
+    //Loop element array
+    while(undefined != eleAry[index]){
+
+        //Word is a type defined
+        if(isKeyWord(eleAry[index])){
+            // New node with name, type and check BON
+            var node_type = eleAry[index];
+            var node_name = eleAry[index + 1];
+            if(BON != eleAry[index + 2]){
+                pErr(BON + " is not found after " + node_name + " (" + node_type + ").");
+                break;
+            }
+
+            p("Find new node: " + node_name + " (" + node_type + ").");
+            var node = createNode({name: node_name, type: node_type});
+            //Add as sub-node
+            the_node.nodeAddSubs(node);
+            index+=3;
+            //Recursive down to sub nodes and get EON index as return
+            index = parseNode(eleAry, node, index);
+        } else if (EON == eleAry[index]){
+            // End of the_node parsing
+            p("Node end: " + the_node.name + " (" + the_node.type + ").");
+            index++;
+            return index;
+        } else {
+            //To be extended for new supporting.
+            index++;
+        }
+    }// while end
+    pTips("Finish node parsing: " + the_node.name + " (" + the_node.type + ").");
+    return index;
+}
+
+function shrinkWords(eleAry){
+    pTips("Gonna merge: comments[//, /*, */], quotations [\", '], remove ENTER ");
+    pErr("To Be implemented");
+    return eleAry;
+}
+
+yangInterpreter(input_yang);
 
 
