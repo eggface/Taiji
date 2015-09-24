@@ -2,6 +2,13 @@
 //*******************************************************************************************//
 //
 module.exports = {
+
+    TYPE_LEAF: "leaf",
+    TYPE_TYPE: "type",
+    type_mapping_yang_schema: new Map([
+        ["uint32", "Number"]
+    ]),
+
     p: function (msg) {
         console.log(msg);
     },

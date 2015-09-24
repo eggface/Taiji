@@ -1,4 +1,9 @@
 var dir = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/";
+var dir_output = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/output/";
+//var output_schema_file = "output/schema.js";
+//var output_html_file = "output/template.html";
+
+var OUTPUT_INDENT = "    ";
 
 var com = require('./common.js');
 pTips = com.pTips;
@@ -30,15 +35,26 @@ function read(file) {
 }
 
 
-//Test parts
+//
+//*******************************************************************************************//
+//
+//Logic
+//YANG Interpreter
 var yang_str = read(dir + "data-rate-profile-body.yang");
 p("Read file and get string: " + yang_str);
-yangInterpreter(yang_str);
+var node_tree = yangInterpreter(yang_str);
 
-//write(dir + "schema", "this is an output schema file");
-//write(dir + "html", "this is an output html File");
+//Write Schema
+var schema_str = yang2Schema(node_tree);
+p(schema_str);
+write(dir_output + node_tree.name + ".js", schema_str);
+pTips("Finish writing schema file.");
 
-//read("./Taiji/output2");
+//Write Template HTML
+var template_str = yang2Template(node_tree);
+p(template_str);
+write(dir_output + node_tree.name + ".html", template_str);
+pTips("Finish writing template file.");
 
 //
 //*******************************************************************************************//
@@ -55,7 +71,7 @@ p("");
 
 function yangType2SchemaType(type) {
     //p("Gonna convert YANG type to Schema type with type mapping. Yang type is: " + type);
-    return type_mapping_yang_schema.get(type);
+    return com.type_mapping_yang_schema.get(type);
 }
 
 function yangName2SchemaName(name) {
@@ -70,45 +86,63 @@ function yang2Schema(node, level) {
     if (null == level) {
         level = 0;
     }
+    //node.display();
     //p("Convert YANG node to Schema JS. node name is: " + node.name + " and level is: " + level);
 
 //Schemas.dataRateProfile = new SimpleSchema({
 //    maxndr: {
 //        type: Number,
 
+    var schema_name; 
     var prefix = "";
     var j;
     for (j = 0; j < level; j++) {
         prefix = prefix + OUTPUT_INDENT;
     }
 
+    var need_end_brace = false;
     var output = "";
-    if (0 == level) {
-        level = 0;
-        output += "Schemas." + yangName2SchemaName(node.name) + " = new SimpleSchema({\n";
-    } else if (TYPE_LEAF == node.type) {
+    if (1 == level) {
+        //level 0 is ignored
+        schema_name = yangName2SchemaName(node.name);
+        output += "Schemas." + schema_name + " = new SimpleSchema({\n";
+        need_end_brace = true;
+    } else if (com.TYPE_LEAF == node.type) {
         //display node attributes, name and type
         //leaf
         output += prefix + yangName2SchemaName(node.name) + ": {\n"
-    } else if (TYPE_TYPE == node.type) {
+        need_end_brace = true;
+    } else if (com.TYPE_TYPE == node.type) {
         //type
         output += prefix + "type: " + yangType2SchemaType(node.name) + ",\n"
     }
 
+    //Parse sub-nodes
     var i;
     level++;
     for (i = 0; i < node.subNodes.length; i++) {
         output += yang2Schema(node.subNodes[i], level);
     }
+    --level;//End sub-nodes and level back
+
     //remove the last ','
     if ("," == output.charAt(output.length - 2)) {
         output = output.substring(0, output.length - 2);
-        output += "\n";
+        if(true == need_end_brace){
+            output += "\n";
+        }
     }
 
-    output += prefix + "}";
+    //Add } if needed
+    if(true == need_end_brace){
+        output += prefix + "}";
+    }
+
     if (0 == level) {
-        output += "\n";
+        //do nothing
+    }
+    else if (1 == level) {
+        output += ");\n" + schema_name + " = new Mongo.Collection(\"" + schema_name + "\");";
     } else {
         output += ",\n";
     }
@@ -140,10 +174,22 @@ p("");
 //</template>
 
 function yang2Template(node) {
+    node = node.subNodes[0];
     pErr("It is just a draft for simple, one layer structure. No further check.");
+
     var output = "";
     var schema_name = yangName2SchemaName(node.name);
     var template_name = yangName2SchemaName(node.name) + "Form";
+
+    //if(null == level){
+    //    level = 0;
+    //}
+    //for (i = 0; i < node.subNodes.length; i++) {
+
+    //    level++;
+    //    output += yang2Template(node.subNodes[i]);
+    //    --level;
+    //}//End sub-nodes and level back
 
     output = "<body>\n\
     <div class=\"container\">\n\

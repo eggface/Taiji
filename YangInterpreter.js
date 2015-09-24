@@ -1,8 +1,10 @@
+var com = require('./common.js');
+pTips = com.pTips;
+p = com.p;
+pErr = com.pErr;
+
     var NODE_ROOT_TYPE = "submodule";
 
-    var TYPE_LEAF = "leaf";
-    var TYPE_TYPE = "type";
-    var OUTPUT_INDENT = "    ";
     var BON = "{";
     var EON = "}";
 
@@ -15,17 +17,10 @@
 
     var key_words = new Set();
     key_words.add("grouping");
-    key_words.add(TYPE_LEAF);
-    key_words.add(TYPE_TYPE);
+    key_words.add(com.TYPE_LEAF);
+    key_words.add(com.TYPE_TYPE);
 
-    var type_mapping_yang_schema = new Map([
-        ["uint32", "Number"]
-    ]);
 
-var com = require('./common.js');
-pTips = com.pTips;
-p = com.p;
-pErr = com.pErr;
 //
 //*******************************************************************************************//
 //
@@ -196,7 +191,7 @@ function yangInterpreter(yang) {
     var index = 0;
     parseNode(ele, root_node, index);
 
-    root_node.display();
+    //root_node.display();
     return root_node;
 }
 
@@ -208,7 +203,6 @@ function isKeyWord(word) {
     return false;
 }
 
-//p("Test to get uint32's schema type: " + type_mapping_yang_schema.get("uint32"));
 //BON: Begin of the node, {
 //EON: End of the node, }
 function parseNode(eleAry, the_node, index_begin) {
