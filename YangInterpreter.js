@@ -213,7 +213,6 @@ function parseNode(eleAry, the_node, index_begin) {
     var index = index_begin;
     //Loop element array
     while (undefined != eleAry[index]) {
-
         //Word is a type defined
         if (isKeyWord(eleAry[index])) {
             // New node with name, type and check BON
