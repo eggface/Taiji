@@ -38,79 +38,9 @@ pTips(" File -> String -> Shink(Removing comments, spaces, enters) -> Array")
 pTips(" -> Looking for and splited into TypeKey(Like: leaf maxndr or type uint32) and body({})")
 pTips(" ==> Loop until no more TypeKey")
 
-var input_yang = "submodule data-rate-profile-body {\n\
-  belongs-to exa-base {\n\
-    prefix exa;\n\
-  }\n\
-grouping data-rate-profile {\n\
-  \n\
-    leaf maxndr {\n\
-      type uint32 {\n\
-        range [0..4294967295];\n\
-        }\n\
-      description\n\
-        [Maximum Net Data Rate (MAXNDR)\n\
-         Defines the value of the maximum net data rate (see clause\n\
-         11.4.2.2/G.9701).\n\
-         Valid values = 0..4294967295];\n\
-      units [1000 bits/second];\n\
-      default [4294967295];\n\
-    }\n\
-    leaf minetr {\n\
-      type uint32 {\n\
-        range 0..4294967295;\n\
-        }\n\
-      description\n\
-        Minimum Expected Throughput (MINETR)\n\
-         Defines the value of the minimum expected throughput (see\n\
-         clause 11.4.2.1/G.9701).\n\
-         Valid values = 0..4294967295;\n\
-      units 1000 bits/second;\n\
-      default 0;\n\
-      //reference ITU-T G.9701 clause 11.4.2.1;\n\
-    }\n\
-\n\
-    leaf maxgdr {\n\
-      type uint32 {\n\
-        range 0..4294967295;\n\
-        }\n\
-      description\n\
-        Maximum Gamma Data Rate (MAXGDR)\n\
-         Defines the maximum value of the GDR (see clause\n\\n\
-         7.11.1.3). The GDR shall not exceed MAXGDR at the start of\n\
-         showtime and during showtime.\n\
-         Valid values = 0..4294967295;\n\
-      units 1000 bits/second;\n\
-      default 4294967295;\n\
-      //reference None;\n\
-    }\n\
-\n\
-    leaf mingdr {\n\
-      type uint32 {\n\
-        range 0..4294967295;\n\
-        }\n\
-      description\n\
-        Minimum Gamma Data Rate (MINGDR)\n\
-         Defines the minimum value of the GDR (see clause\n\
-         7.11.1.3). The GDR may be lower than MINGDR. If the GDR is\n\
-         lower than MINGDR at initialization or when GDR becomes\n\
-         lower than MINGDR during showtime, a threshold crossing\n\
-         alert occurs.\n\
-         Valid values = 0..4294967295;\n\
-      units 1000 bits/second;\n\
-      default 0;\n\
-      //reference None;\n\
-    Double Quotation \"Data rate profile for upstream and downstream\";\n\
-    Single Quotation 'Data rate profile for upstream and downstream';\n\
-    commentLine //Data rate profile for upstream and downstream;\n\
-    commentMulti /*Begin comments. Data rate profile for upstream and downstream;\n\
-                   end of comments*/;\n\
-    } } }";
 //
 //*******************************************************************************************//
 //
-//pTips("Define yang object with YANG file structure.");
-//pTips("");
 
 //Node with Name, Type and an array of sub-nodes
 function createNode(node) {
@@ -149,7 +79,7 @@ function display(level) {
 }
 
 function nodeAddSubs(subNode) {
-    p(this.name + " add subNode " + subNode.name);
+    //p(this.name + " add subNode " + subNode.name);
     this.subNodes[this.subNodes.length] = subNode;
 }
 
@@ -186,9 +116,9 @@ function yangInterpreter(yang) {
 
     pTips("Shrink Words.");
     ele = shrinkWords(ele);
-    for (i = 0; i < ele.length; i++) {
-        p(ele[i]);
-    }
+    //for (i = 0; i < ele.length; i++) {
+    //    p(ele[i]);
+    //}
 
     pTips("Go through words and generate nodes and sub-nodes");
     //submodule is the signal of begin of node statement
@@ -232,7 +162,7 @@ function parseNode(eleAry, the_node, index_begin) {
                 pErr(BOBR + " is not found after " + node_id + " (" + node_key + ").");
                 break;
             } else {
-                p("Find new node: " + node_id + " (" + node_key + ").");
+                //p("Find new node: " + node_id + " (" + node_key + ").");
                 var node = createNode({name: node_id, type: node_key});
                 //Add as sub-node
                 the_node.nodeAddSubs(node);
@@ -249,7 +179,7 @@ function parseNode(eleAry, the_node, index_begin) {
             }
         } else if (NODE_ROOT_TYPE != the_node.type && EOBR == eleAry[index]) {
             // End of the_node parsing && it is in Node parsing
-            p("Node end: " + the_node.name + " (" + the_node.type + ").");
+            //p("Node end: " + the_node.name + " (" + the_node.type + ").");
             index++;
             return index;
         } else {
