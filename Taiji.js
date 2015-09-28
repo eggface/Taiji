@@ -1,7 +1,6 @@
 var dir = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/";
 var dir_output = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/output/";
-//var output_schema_file = "output/schema.js";
-//var output_html_file = "output/template.html";
+var input = "data-rate-profile-body.yang";
 
 var OUTPUT_INDENT = "    ";
 
@@ -47,7 +46,7 @@ function read(file) {
 //Logic
 //YANG Interpreter
 main = function () {
-    var yang_str = read(dir + "data-rate-profile-body.yang");
+    var yang_str = read(dir + input);
     p("Read file and get string: " + yang_str);
     var node_tree = yangInterpreter(yang_str);
 
