@@ -2,23 +2,30 @@ var com = require('./common.js');
 pTips = com.pTips;
 p = com.p;
 pErr = com.pErr;
+pNoS = com.pNoS;
 
-    var NODE_ROOT_TYPE = "submodule";
+//var rfc = require('./rfc6020.js');
+//rfc.range();
 
-    var BON = "{";
-    var EON = "}";
+var NODE_ROOT_TYPE = "submodule";
 
-    var CMT_LINE = "//";
-    var CMT_MLINE_BEGIN = "/*";
-    var CMT_MLINE_END = "*/";
-    var QUO_SINGLE = "'";
-    var QUO_DOUBLE = "\"";
-    var ENTER = "\n";
+var BOBR = "{";
+var EOBR = "}";
+var EOL = ";";
 
-    var key_words = new Set();
-    key_words.add("grouping");
-    key_words.add(com.TYPE_LEAF);
-    key_words.add(com.TYPE_TYPE);
+var CMT_LINE = "//";
+var CMT_MLINE_BEGIN = "/*";
+var CMT_MLINE_END = "*/";
+var QUO_SINGLE = "'";
+var QUO_DOUBLE = "\"";
+var ENTER = "\n";
+
+var key_words = new Set();
+key_words.add("grouping");
+key_words.add(com.KEY_LEAF);
+key_words.add(com.KEY_TYPE);
+key_words.add(com.KEY_RANGE);
+key_words.add(com.KEY_DEFAULT);
 
 
 //
@@ -191,7 +198,7 @@ function yangInterpreter(yang) {
     var index = 0;
     parseNode(ele, root_node, index);
 
-    //root_node.display();
+    root_node.display();
     return root_node;
 }
 
@@ -203,8 +210,8 @@ function isKeyWord(word) {
     return false;
 }
 
-//BON: Begin of the node, {
-//EON: End of the node, }
+//BOBR: Begin of the node, {
+//EOBR: End of the node, }
 function parseNode(eleAry, the_node, index_begin) {
     //pTips("Gonna parse Node from index: " + index_begin);
     //pTips("It is a recursive call.");
@@ -215,22 +222,32 @@ function parseNode(eleAry, the_node, index_begin) {
     while (undefined != eleAry[index]) {
         //Word is a type defined
         if (isKeyWord(eleAry[index])) {
-            // New node with name, type and check BON
-            var node_type = eleAry[index];
-            var node_name = eleAry[index + 1];
-            if (BON != eleAry[index + 2]) {
-                pErr(BON + " is not found after " + node_name + " (" + node_type + ").");
-                break;
-            }
+            //Parsing statement
+            // New node with name, type and check BOBR
+            var node_key = eleAry[index];
+            var node_id = eleAry[index + 1];
 
-            p("Find new node: " + node_name + " (" + node_type + ").");
-            var node = createNode({name: node_name, type: node_type});
-            //Add as sub-node
-            the_node.nodeAddSubs(node);
-            index += 3;
-            //Recursive down to sub nodes and get EON index as return
-            index = parseNode(eleAry, node, index);
-        } else if (NODE_ROOT_TYPE != the_node.type && EON == eleAry[index]) {
+            //Node could be started with { or just one line end with ;
+            if (BOBR != eleAry[index + 2] && EOL != eleAry[index + 2]) {
+                pErr(BOBR + " is not found after " + node_id + " (" + node_key + ").");
+                break;
+            } else {
+                p("Find new node: " + node_id + " (" + node_key + ").");
+                var node = createNode({name: node_id, type: node_key});
+                //Add as sub-node
+                the_node.nodeAddSubs(node);
+
+                //has {, means has substatements
+                if (BOBR == eleAry[index + 2]) {
+                    index += 3;
+                    //Recursive down to sub nodes and get EOBR index as return
+                    index = parseNode(eleAry, node, index);
+                } else {
+                    //has ;, means no substatements
+                    index += 3;
+                }
+            }
+        } else if (NODE_ROOT_TYPE != the_node.type && EOBR == eleAry[index]) {
             // End of the_node parsing && it is in Node parsing
             p("Node end: " + the_node.name + " (" + the_node.type + ").");
             index++;
@@ -338,7 +355,17 @@ function lookFor(ary, index_start, str) {
     return index;
 }
 
-//yangInterpreter(input_yang);
+//To be commented
+//var dir = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/";
+//var yang_str = read(dir + "data-rate-profile-body.yang");
+//p("Read file and get string: " + yang_str);
+//var node_tree = yangInterpreter(yang_str);
+//function read(file) {
+//    var fs = require("fs");
+//
+//    // Synchronous read
+//    return fs.readFileSync(file).toString();
+//}
 
 //
 //*******************************************************************************************//
