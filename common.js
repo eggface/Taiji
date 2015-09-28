@@ -4,10 +4,14 @@
 module.exports = {
 
     KEY_GROUPING: "grouping",
+    KEY_AUGMENT: "augment",
     KEY_LEAF: "leaf",
     KEY_TYPE: "type",
     KEY_RANGE: "range",
     KEY_DEFAULT: "default",
+    KEY_LIST: "list",
+    KEY_CONTAINER: "container",
+
 
     type_mapping_yang_schema: new Map([
         ["uint32", "Number"]

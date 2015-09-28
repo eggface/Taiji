@@ -1,6 +1,7 @@
 var dir = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/";
 var dir_output = "/Users/JamesWang/Documents/workspace/Repo/Taiji/Taiji/output/";
-var input = "data-rate-profile-body.yang";
+//var input = "data-rate-profile-body.yang";
+var input = "qos@2015-05-05.yang";
 
 var OUTPUT_INDENT = "    ";
 
@@ -47,9 +48,10 @@ function read(file) {
 //YANG Interpreter
 main = function () {
     var yang_str = read(dir + input);
-    p("Read file and get string: " + yang_str);
+    //p("Read file and get string: " + yang_str);
     var node_tree = yangInterpreter(yang_str);
 
+/*
     var node_index;
     for (node_index = 0; node_index < node_tree.subNodes.length; node_index++) {
         var json_obj = yang2Json(node_tree.subNodes[node_index]);
@@ -60,12 +62,12 @@ main = function () {
         var schema_name = yangName2SchemaName(yang_name);
         writeSchemaFile(node_tree.name, schema_name, json_obj);
     }
-
     //Write Template HTML
     var template_str = yang2Template(node_tree);
     //p(template_str);
     write(dir_output + node_tree.name + ".html", template_str);
     pTips("Finish writing template file.");
+    */
 }();
 
 function writeSchemaFile(file_name, schema_name, json_obj) {
@@ -85,8 +87,8 @@ function writeSchemaFile(file_name, schema_name, json_obj) {
     output += ");\n\n" + schema_name + " = new Mongo.Collection(\"" + schema_name + "\");";
     //p(output);
 
-    write(dir_output + file_name + ".js", output);
-    pTips("Finish writing schema file.");
+    //write(dir_output + file_name + ".js", output);
+    //pTips("Finish writing schema file.");
 }
 
 
@@ -117,7 +119,7 @@ function yangName2SchemaName(name) {
 
 //Return JSON object with decoded properties from YANG node
 function yang2Json(node) {
-    p("Call yang2Json and node name is: " + node.name);
+    //p("Call yang2Json and node name is: " + node.name);
     //assume it begins from grouping level, not root from submodel
     //Ignore unsupported node and subnodes
 

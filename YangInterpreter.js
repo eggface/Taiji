@@ -21,11 +21,14 @@ var QUO_DOUBLE = "\"";
 var ENTER = "\n";
 
 var key_words = new Set();
-key_words.add("grouping");
+key_words.add(com.KEY_GROUPING);
 key_words.add(com.KEY_LEAF);
 key_words.add(com.KEY_TYPE);
 key_words.add(com.KEY_RANGE);
 key_words.add(com.KEY_DEFAULT);
+key_words.add(com.KEY_LIST);
+key_words.add(com.KEY_CONTAINER);
+key_words.add(com.KEY_AUGMENT);
 
 
 //
@@ -142,16 +145,22 @@ function isKeyWord(word) {
 
 //BOBR: Begin of the node, {
 //EOBR: End of the node, }
-function parseNode(eleAry, the_node, index_begin) {
+//index_begin: start of parse of the array
+//index_end: the end index of this array, in case of {} block.
+function parseNode(eleAry, the_node, index_begin, index_end) {
     //pTips("Gonna parse Node from index: " + index_begin);
     //pTips("It is a recursive call.");
-    var index_end = index_begin;
-
     var index = index_begin;
     //Loop element array
-    while (undefined != eleAry[index]) {
-        //Word is a type defined
-        if (isKeyWord(eleAry[index])) {
+    while (null != eleAry[index]) {
+        if (NODE_ROOT_TYPE != the_node.type && BOBR == eleAry[index]) {
+            //p(eleAry[index - 1] + ", index is " + index);
+            //Found an unsupported {}, not key word found in advance. Ignore this braces block 
+            var sub_index_end = lookForIgnBR(eleAry, index + 1, EOBR);
+            //p("sub_index is " + sub_index_end);
+            index = sub_index_end + 1;
+        } else if (isKeyWord(eleAry[index])) {
+            //Word is a type defined
             //Parsing statement
             // New node with name, type and check BOBR
             var node_key = eleAry[index];
@@ -170,18 +179,20 @@ function parseNode(eleAry, the_node, index_begin) {
                 //has {, means has substatements
                 if (BOBR == eleAry[index + 2]) {
                     index += 3;
+                    //Looking for the } and mark the index
+                    var sub_index_end = lookForIgnBR(eleAry, index, EOBR);
                     //Recursive down to sub nodes and get EOBR index as return
-                    index = parseNode(eleAry, node, index);
+                    index = parseNode(eleAry, node, index, sub_index_end);
                 } else {
                     //has ;, means no substatements
                     index += 3;
                 }
             }
-        } else if (NODE_ROOT_TYPE != the_node.type && EOBR == eleAry[index]) {
+        } else if ((NODE_ROOT_TYPE != the_node.type) && (EOBR == eleAry[index]) && (index == index_end)) {
+            //Looking for the '}', there might be other {} couples in side.
             // End of the_node parsing && it is in Node parsing
             //p("Node end: " + the_node.name + " (" + the_node.type + ").");
-            index++;
-            return index;
+            return ++index;
         } else {
             //To be extended for new supporting.
             index++;
@@ -280,6 +291,30 @@ function lookFor(ary, index_start, str) {
     for (i = index_start; i < ary.length; i++) {
         if (str == ary[i]) {
             return i;
+        }
+    }
+    return index;
+}
+
+function lookForIgnBR(ary, index_start, str) {
+    //p("Look for " + str + " in ary from index " + index_start);
+    var index = -1;
+    var i;
+    var block_count = 0;
+    for (i = index_start; i < ary.length; i++) {
+        //skip blocks
+        //
+        if (str == ary[i]) {
+            if (0 == block_count) {
+                //p("Found " + str + " with index " + i);
+                return i;
+            }
+        }
+
+        if ("{" == ary[i]) {
+            block_count++;
+        } else if ("}" == ary[i]) {
+            block_count--;
         }
     }
     return index;

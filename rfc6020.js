@@ -30,7 +30,7 @@ module.exports = {
             yang2json: function (node, json_prop) {
                 var arg = node.name;
                 var key = node.type;
-                p("Call yang2json and leaf's arg: " + arg);
+                //p("Call yang2json and leaf's arg: " + arg);
             }
         },
         type: {
