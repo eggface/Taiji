@@ -14,9 +14,6 @@ pNoS = com.pNoS;
 var yangInterpreter = require('./YangInterpreter.js').yangInterpreter;
 var rfc = require('./rfc6020.js');
 
-var as_prop = new Set();
-as_prop.add(com.KEY_LEAF);
-
 //
 //*******************************************************************************************//
 //
@@ -51,23 +48,24 @@ main = function () {
     //p("Read file and get string: " + yang_str);
     var node_tree = yangInterpreter(yang_str);
 
-/*
     var node_index;
     for (node_index = 0; node_index < node_tree.subNodes.length; node_index++) {
         var json_obj = yang2Json(node_tree.subNodes[node_index]);
         p("JSON object: ");
         p(json_obj);
+        p("\n");
 
-        var yang_name = node_tree.subNodes[node_index].name;
-        var schema_name = yangName2SchemaName(yang_name);
-        writeSchemaFile(node_tree.name, schema_name, json_obj);
+        //var yang_name = node_tree.subNodes[node_index].name;
+        //var schema_name = yangName2SchemaName(yang_name);
+        //writeSchemaFile(node_tree.name, schema_name, json_obj);
     }
-    //Write Template HTML
-    var template_str = yang2Template(node_tree);
-    //p(template_str);
-    write(dir_output + node_tree.name + ".html", template_str);
-    pTips("Finish writing template file.");
-    */
+    /*
+     //Write Template HTML
+     var template_str = yang2Template(node_tree);
+     //p(template_str);
+     write(dir_output + node_tree.name + ".html", template_str);
+     pTips("Finish writing template file.");
+     */
 }();
 
 function writeSchemaFile(file_name, schema_name, json_obj) {
@@ -119,38 +117,57 @@ function yangName2SchemaName(name) {
 
 //Return JSON object with decoded properties from YANG node
 function yang2Json(node) {
-    //p("Call yang2Json and node name is: " + node.name);
+    p("Call yang2Json and node name is: " + node.name);
     //assume it begins from grouping level, not root from submodel
     //Ignore unsupported node and subnodes
 
-    var json_obj = {};
-    //Loop leaves
-    for (i = 0; i < node.subNodes.length; i++) {
-        var sub_node = node.subNodes[i];
-        if (false == as_prop.has(sub_node.type)) {
-            continue;
-        }
+    //It might be grouping, typedef or others
+    var schemaParserObj = rfc.getSchemaParserObj(node.type);
+    p("schemaParserObj is " + schemaParserObj);
 
-        p(sub_node.type + " is defined as property's key word.");
-        //parse leaf
-        //var json_prop = {}
-        var prop_name = sub_node.name;
-        json_obj[prop_name] = {};
-        parseProp(sub_node, json_obj[prop_name]);
+    var propNodes = [];
+    //It might be decoded as schema obj or typedef obj. They have different layer
+    if (null != schemaParserObj) {
+        propNodes = rfc[schemaParserObj].fetchPropNodes(node);
     }
+    //
+    var json_obj = {};
+    var i = 0;
+    //Loop properties
+    for (i = 0; i < propNodes.length; i++) {
+        var prop_node = propNodes[i];
+
+        p(prop_node.type + " to be parsed.");
+        //parse property (to lower case and - => _)
+        var prop_name = rfc.convertTypedefName(prop_node.name);
+        json_obj[prop_name] = {};
+
+        var j;
+        //Loop attributes
+        for (j = 0; j < prop_node.subNodes.length; j++) {
+            var att_node = prop_node.subNodes[j];
+            //p("schemaParserObj: " + schemaParserObj + " and prop node type: " + prop_node.type + " prop node name is: " + prop_name);
+            //p("attribute type: " + att_node.type + " attribute name: " + att_node.name);
+            //p("Gonna parse property: " + prop_name);
+            rfc.Property[att_node.type].yang2json(att_node, json_obj[prop_name]);
+        }
+    }
+
     return json_obj;
 }//End yang2Json
 
 //Recursive function to parse Property, the node might has sub-nodes
+//Function Canceled
 function parseProp(leaf_node, json_prop) {
     p("Call parseProp and node name is: " + leaf_node.name);
     rfc.property[leaf_node.type].yang2json(leaf_node, json_prop);
-    var sub = leaf_node.subNodes;
+    //var sub = leaf_node.subNodes;
 
-    var i;
-    for (i = 0; i < leaf_node.subNodes.length; i++) {
-        parseProp(leaf_node.subNodes[i], json_prop)
-    }
+    //Sub nodes are not parsed here. They should be decoded in side property parser.
+    //var i;
+    //for (i = 0; i < leaf_node.subNodes.length; i++) {
+    //    parseProp(leaf_node.subNodes[i], json_prop)
+    //}
 }//End parseProp
 
 

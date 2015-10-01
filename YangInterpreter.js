@@ -22,6 +22,7 @@ var ENTER = "\n";
 
 var key_words = new Set();
 key_words.add(com.KEY_GROUPING);
+key_words.add(com.KEY_TYPEDEF);
 key_words.add(com.KEY_LEAF);
 key_words.add(com.KEY_TYPE);
 key_words.add(com.KEY_RANGE);
@@ -29,6 +30,7 @@ key_words.add(com.KEY_DEFAULT);
 key_words.add(com.KEY_LIST);
 key_words.add(com.KEY_CONTAINER);
 key_words.add(com.KEY_AUGMENT);
+key_words.add(com.KEY_ENUM);
 
 
 //
@@ -243,6 +245,7 @@ function shrinkWords(eleAry) {
                 index = end_index + 1;
                 break;
             case QUO_SINGLE:
+                //Merge into '' covered string
                 //pTips("Quotation: ' to '");
                 //looking for the end
                 var end_index = lookFor(eleAry, index + 1, QUO_SINGLE);
@@ -251,13 +254,20 @@ function shrinkWords(eleAry) {
                     break;
                 }
                 //clone a tmp array and join to a string
-                var merged = eleAry.slice(index, end_index + 1).join(" ");
+                var merged;
+                if (index + 1 == end_index) {
+                    merged = '';
+                } else {
+                    //as 'A B C'
+                    merged = QUO_SINGLE + eleAry.slice(index + 1, end_index).join(" ") + QUO_SINGLE;
+                }
                 //p(merged);
                 //copy back to new array
                 new_ary.push(merged);
                 index = end_index + 1;
                 break;
             case QUO_DOUBLE:
+                //Merge into "" covered string
                 //pTips("Quotation: \" to \"");
                 //looking for the end
                 var end_index = lookFor(eleAry, index + 1, QUO_DOUBLE);
@@ -266,7 +276,12 @@ function shrinkWords(eleAry) {
                     break;
                 }
                 //clone a tmp array and join to a string
-                var merged = eleAry.slice(index, end_index + 1).join(" ");
+                if (index + 1 == end_index) {
+                    merged = "";
+                } else {
+                    //as "A B C"
+                    merged = QUO_DOUBLE + eleAry.slice(index + 1, end_index).join(" ") + QUO_DOUBLE;
+                }
                 //p(merged);
                 //copy back to new array
                 new_ary.push(merged);
