@@ -19,6 +19,14 @@ var rfc = require('./rfc6020.js');
 //
 pTips("\nLoading Taiji.js...\n");
 
+function tryDelete(path){
+    var fs = require('fs');
+    if (fs.existsSync(path)) {
+        fs.unlinkSync(path);
+    }
+}
+
+
 function write(file, str) {
     var fs = require('fs');
     fs.writeFile(file, str, function (err) {
@@ -27,6 +35,17 @@ function write(file, str) {
         }
 
         p("The file [" + file + "] was saved!");
+    });
+}
+
+function append(file, str) {
+    var fs = require('fs');
+    fs.appendFile(file, str, function (err) {
+        if (err) {
+            return p(err);
+        }
+
+        p("The file [" + file + "] was appended!");
     });
 }
 
@@ -49,15 +68,18 @@ main = function () {
     var node_tree = yangInterpreter(yang_str);
 
     var node_index;
+    tryDelete(dir_output + node_tree.name + ".js");
     for (node_index = 0; node_index < node_tree.subNodes.length; node_index++) {
-        var json_obj = yang2Json(node_tree.subNodes[node_index]);
+        pTips("\nNamespace: exa: is converted as EXA_ \n");
+        var sub_node_tree = preYang2Json(node_tree.subNodes[node_index]);
+        var json_obj = yang2Json(sub_node_tree);
         p("JSON object: ");
         p(json_obj);
         p("\n");
 
-        //var yang_name = node_tree.subNodes[node_index].name;
-        //var schema_name = yangName2SchemaName(yang_name);
-        //writeSchemaFile(node_tree.name, schema_name, json_obj);
+        var yang_name = node_tree.subNodes[node_index].name;
+        var schema_name = yangName2SchemaName(yang_name);
+        writeSchemaFile(node_tree.name, schema_name, json_obj);
     }
     /*
      //Write Template HTML
@@ -69,7 +91,7 @@ main = function () {
 }();
 
 function writeSchemaFile(file_name, schema_name, json_obj) {
-    var output = "";
+    var output = "\n";
     //JSON object -> JSON String
     //indent as 4 spaces
     var json_txt = JSON.stringify(json_obj, null, 4);
@@ -85,8 +107,8 @@ function writeSchemaFile(file_name, schema_name, json_obj) {
     output += ");\n\n" + schema_name + " = new Mongo.Collection(\"" + schema_name + "\");";
     //p(output);
 
-    //write(dir_output + file_name + ".js", output);
-    //pTips("Finish writing schema file.");
+    append(dir_output + file_name + ".js", output);
+    pTips("Finish writing schema file.");
 }
 
 
@@ -115,6 +137,20 @@ function yangName2SchemaName(name) {
     });
 }
 
+//function before Yang2Json
+function preYang2Json(node) {
+    var tmp_node = node;
+    tmp_node.name = rfc.convertNameSpaceExa(node.name);
+    tmp_node.type = rfc.convertNameSpaceExa(node.type);
+    var j;
+    //Loop sub nodes
+    for (j = 0; j < node.subNodes.length; j++) {
+        var sub_node = node.subNodes[j];
+        sub_node = preYang2Json(sub_node);
+    }
+    return tmp_node;
+}
+
 //Return JSON object with decoded properties from YANG node
 function yang2Json(node) {
     p("Call yang2Json and node name is: " + node.name);
@@ -123,7 +159,7 @@ function yang2Json(node) {
 
     //It might be grouping, typedef or others
     var schemaParserObj = rfc.getSchemaParserObj(node.type);
-    p("schemaParserObj is " + schemaParserObj);
+    //p("schemaParserObj is " + schemaParserObj);
 
     var propNodes = [];
     //It might be decoded as schema obj or typedef obj. They have different layer
@@ -137,7 +173,7 @@ function yang2Json(node) {
     for (i = 0; i < propNodes.length; i++) {
         var prop_node = propNodes[i];
 
-        p(prop_node.type + " to be parsed.");
+        //p(prop_node.type + " to be parsed.");
         //parse property (to lower case and - => _)
         var prop_name = rfc.convertTypedefName(prop_node.name);
         json_obj[prop_name] = {};

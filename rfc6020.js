@@ -35,7 +35,11 @@ module.exports = {
 
     //ABC-DEF => abc_def
     convertTypedefName: function (yang_name) {
-        return yang_name.toLowerCase().replace("-", "_");
+        return yang_name.toLowerCase().replace(/-/g, "_");
+    },
+    //exa:abc => EXA_abc, type or name should be converted
+    convertNameSpaceExa: function (str) {
+        return str.replace(/exa:/g, "EXA_");
     },
 
 //SimpleType.meter_action = new SimpleSchema({
