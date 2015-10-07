@@ -41,6 +41,10 @@ module.exports = {
     convertNameSpaceExa: function (str) {
         return str.replace(/exa:/g, "EXA_");
     },
+    ///abc/def => __abc__def
+    convertNamePath: function (yang_name) {
+        return yang_name.replace(/\//g, "__");
+    },
 
 //SimpleType.meter_action = new SimpleSchema({
 //    meter_action: {

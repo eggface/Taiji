@@ -71,6 +71,7 @@ main = function () {
     tryDelete(dir_output + node_tree.name + ".js");
     for (node_index = 0; node_index < node_tree.subNodes.length; node_index++) {
         pTips("\nNamespace: exa: is converted as EXA_ \n");
+        pTips("\nPath flag '/': is converted as '__', might be fixed in the future. \n");
         var sub_node_tree = preYang2Json(node_tree.subNodes[node_index]);
         var json_obj = yang2Json(sub_node_tree);
         p("JSON object: ");
@@ -140,7 +141,7 @@ function yangName2SchemaName(name) {
 //function before Yang2Json
 function preYang2Json(node) {
     var tmp_node = node;
-    tmp_node.name = rfc.convertNameSpaceExa(node.name);
+    tmp_node.name = rfc.convertNamePath(rfc.convertNameSpaceExa(node.name));
     tmp_node.type = rfc.convertNameSpaceExa(node.type);
     var j;
     //Loop sub nodes
