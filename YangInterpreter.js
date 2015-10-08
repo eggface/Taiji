@@ -31,6 +31,7 @@ key_words.add(com.KEY_LIST);
 key_words.add(com.KEY_CONTAINER);
 key_words.add(com.KEY_AUGMENT);
 key_words.add(com.KEY_ENUM);
+key_words.add(com.KEY_WHEN);
 
 
 //
@@ -42,6 +43,8 @@ pTips("In reading YANG process:")
 pTips(" File -> String -> Shink(Removing comments, spaces, enters) -> Array")
 pTips(" -> Looking for and splited into TypeKey(Like: leaf maxndr or type uint32) and body({})")
 pTips(" ==> Loop until no more TypeKey")
+
+pTips("Do not take into consideration that one profile comes from multi files. For now.")
 
 //
 //*******************************************************************************************//
@@ -111,8 +114,9 @@ function nodeAddSubs(subNode) {
 function yangInterpreter(yang) {
     //pTips("Input YANG: \n" + yang);
 
-    //Accepted elements: [ Words \ { } " ; \n ' // /* */] 
-    var ele = yang.match(/\b\S+\b|\{|\}|\"|;|\n|'|\/\/|\/\*|\*\//g);
+    //Accepted elements: [ /Words Words \ { } " ; \n ' // /* */] 
+    //var ele = yang.match(/\b\S+\b|\{|\}|\"|;|\n|'|\/\/|\/\*|\*\//g);
+    var ele = yang.match(/\/\S+\b|\b\S+\b|\{|\}|\"|;|\n|'|\/\/|\/\*|\*\//g);
     //p("Counts of ele: " + ele.length);
     //var i;
     //for (i = 0; i < ele.length; i++) {

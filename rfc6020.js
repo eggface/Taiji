@@ -16,19 +16,22 @@ pNoS = com.pNoS;
 //
 pTips("\nLoading rfc6020.js...\n");
 
+    //YANG: leaf -> Schema property
 var schema_prop_key = new Set();
 schema_prop_key.add(com.KEY_LEAF);
+schema_prop_key.add(com.KEY_AUGMENT);
 
+    //YANG: typedef -> Schema SimpleType
+    //YANG: grouping -> Schema RecordType
 var schema_yang_type_mapping = new Map([
-    ["typedef", "SimpleType"],
-    ["grouping", "RecordType"]
+    [com.KEY_TYPEDEF, "SimpleType"],
+    [com.KEY_GROUPING, "RecordType"]
+    //[com.KEY_AUGMENT, "RecordType"]
     //["container", "schema"],
 ]);
 
 module.exports = {
     //Mapping YANG object type to Schema object type
-    //YANG: typedef -> Schema SimpleType
-    //YANG: grouping -> Schema RecordType
     getSchemaParserObj: function (yang_type) {
         return schema_yang_type_mapping.get(yang_type);
     },

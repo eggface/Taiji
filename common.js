@@ -13,6 +13,7 @@ module.exports = {
     KEY_LIST: "list",
     KEY_CONTAINER: "container",
     KEY_ENUM: "enum",
+    KEY_WHEN: "when",
 
 
     type_mapping_yang_schema: new Map([
