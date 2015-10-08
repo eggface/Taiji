@@ -16,6 +16,15 @@ module.exports = {
     KEY_WHEN: "when",
 
 
+    KEY_EXA_CONFIG_PROFILE: "/exa:config/exa:profile",
+    KEY_EXA_CONFIG_SYSTEM: "/exa:config/exa:system",
+
+
+    KEY_AUGMENTTYPE: "AugmentType",
+    KEY_RECORDTYPE: "RecordType",
+    KEY_SIMPLETYPE: "SimpleType",
+
+
     type_mapping_yang_schema: new Map([
         ["uint32", "Number"],
         ["enumeration", "String"]
@@ -47,6 +56,13 @@ module.exports = {
             }
             return rtn;
         }
+    },
+    isEmpty: function (obj) {
+        for (var prop in obj) {
+            if (obj.hasOwnProperty(prop))
+                return false;
+        }
+        return true;
     }
 }
 //If it is required in other JS, this line will be called.

@@ -14,12 +14,13 @@ pNoS = com.pNoS;
 var yangInterpreter = require('./YangInterpreter.js').yangInterpreter;
 var rfc = require('./rfc6020.js');
 
+var json_node_config = {};
 //
 //*******************************************************************************************//
 //
 pTips("\nLoading Taiji.js...\n");
 
-function tryDelete(path){
+function tryDelete(path) {
     var fs = require('fs');
     if (fs.existsSync(path)) {
         fs.unlinkSync(path);
@@ -70,18 +71,31 @@ main = function () {
     var node_index;
     tryDelete(dir_output + node_tree.name + ".js");
     for (node_index = 0; node_index < node_tree.subNodes.length; node_index++) {
-        pTips("\nNamespace: exa: is converted as EXA_ \n");
-        pTips("\nPath flag '/': is converted as '__', might be fixed in the future. \n");
-        var sub_node_tree = preYang2Json(node_tree.subNodes[node_index]);
-        var json_obj = yang2Json(sub_node_tree);
-        p("JSON object: ");
-        p(json_obj);
-        p("\n");
+        //var sub_node_tree = preYang2Json(node_tree.subNodes[node_index]);
+        //var json_obj = yang2Json(sub_node_tree);
+        var json_obj = yang2Json(node_tree.subNodes[node_index]);
+        if (null != json_obj && false == com.isEmpty(json_obj)) {
+            p("JSON object: ");
+            p(json_obj);
+            p("\n");
 
-        var yang_name = node_tree.subNodes[node_index].name;
-        var schema_name = yangName2SchemaName(yang_name);
-        writeSchemaFile(node_tree.name, schema_name, json_obj);
+            var yang_name = node_tree.subNodes[node_index].name;
+            var schema_name = yangName2SchemaName(yang_name);
+            writeSchemaFile(node_tree.name, schema_name, json_obj);
+        }
     }
+    //write config node, profile, system, interface ...
+    p("\nNotes [/exa:config]: ");
+    p(JSON.stringify(json_node_config, null, 4));
+    pTips("For now, only " + com.KEY_EXA_CONFIG_PROFILE + " supported and written in file.");
+    var json_profile = json_node_config[com.KEY_EXA_CONFIG_PROFILE];
+    for (var key in json_profile) {
+        if (json_profile.hasOwnProperty(key)) {
+            //p(key + ": " + json_profile[key]);
+            writeSchemaFile(node_tree.name, yangName2SchemaName(key), json_profile[key]);
+        }
+    }
+
     /*
      //Write Template HTML
      var template_str = yang2Template(node_tree);
@@ -105,7 +119,7 @@ function writeSchemaFile(file_name, schema_name, json_obj) {
 
     output += "Schemas." + schema_name + " = new SimpleSchema(\n";
     output += json_txt;
-    output += ");\n\n" + schema_name + " = new Mongo.Collection(\"" + schema_name + "\");";
+    output += ");\n" + schema_name + " = new Mongo.Collection(\"" + schema_name + "\");\n";
     //p(output);
 
     append(dir_output + file_name + ".js", output);
@@ -140,6 +154,8 @@ function yangName2SchemaName(name) {
 
 //function before Yang2Json
 function preYang2Json(node) {
+    pTips("\nNamespace: exa: is converted as EXA_ \n");
+    pTips("\nPath flag '/': is converted as '__', might be fixed in the future. \n");
     var tmp_node = node;
     tmp_node.name = rfc.convertNamePath(rfc.convertNameSpaceExa(node.name));
     tmp_node.type = rfc.convertNameSpaceExa(node.type);
@@ -152,7 +168,14 @@ function preYang2Json(node) {
     return tmp_node;
 }
 
-//Return JSON object with decoded properties from YANG node
+//Return JSON object with decoded properties from YANG node, not a recursive function
+//Node -----
+//       |---Property
+//               |---subNodes
+//               |---subNodes
+//       |---Property
+//               |---subNodes
+//               |---subNodes
 function yang2Json(node) {
     p("Call yang2Json and node name is: " + node.name);
     //assume it begins from grouping level, not root from submodel
@@ -165,7 +188,17 @@ function yang2Json(node) {
     var propNodes = [];
     //It might be decoded as schema obj or typedef obj. They have different layer
     if (null != schemaParserObj) {
-        propNodes = rfc[schemaParserObj].fetchPropNodes(node);
+        //if augment
+        if (com.KEY_AUGMENTTYPE == schemaParserObj) {
+            p("It is an augment type. Gonna call augment2Json and store JSON objects.");
+            var augment_type = rfc[schemaParserObj].fetchAugmentType(node);
+            if (null != augment_type) {
+                p("Augment Type is: " + augment_type);
+                augment2Json(augment_type, node);
+            }
+        } else {
+            propNodes = rfc[schemaParserObj].fetchPropNodes(node);
+        }
     }
     //
     var json_obj = {};
@@ -183,9 +216,9 @@ function yang2Json(node) {
         //Loop attributes
         for (j = 0; j < prop_node.subNodes.length; j++) {
             var att_node = prop_node.subNodes[j];
-            //p("schemaParserObj: " + schemaParserObj + " and prop node type: " + prop_node.type + " prop node name is: " + prop_name);
-            //p("attribute type: " + att_node.type + " attribute name: " + att_node.name);
-            //p("Gonna parse property: " + prop_name);
+            p("schemaParserObj: [" + schemaParserObj + "], and prop node type: [" + prop_node.type + "], prop node name is: [" + prop_name + "].");
+            p("attribute type: [" + att_node.type + "], attribute name: [" + att_node.name + "].");
+            p("Gonna parse property: [" + prop_name + "].");
             rfc.Property[att_node.type].yang2json(att_node, json_obj[prop_name]);
         }
     }
@@ -193,6 +226,21 @@ function yang2Json(node) {
     return json_obj;
 }//End yang2Json
 
+//Call yang2Json and return augment JSON
+function augment2Json(augment_type, node) {
+    if (null == json_node_config[augment_type]) {
+        json_node_config[augment_type] = {};
+    }
+
+    var j;
+    for (j = 0; j < node.subNodes.length; j++) {
+        var aug_sub = node.subNodes[j];
+        var aug_json = yang2Json(aug_sub);
+        //p("aug_JSON object of [" + aug_sub.name + "]: ");
+        json_node_config[augment_type][aug_sub.name] = aug_json;
+        //p(json_node_config[aug_sub.name]);
+    }
+}
 //Recursive function to parse Property, the node might has sub-nodes
 //Function Canceled
 function parseProp(leaf_node, json_prop) {

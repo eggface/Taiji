@@ -16,17 +16,18 @@ pNoS = com.pNoS;
 //
 pTips("\nLoading rfc6020.js...\n");
 
-    //YANG: leaf -> Schema property
+//YANG: leaf -> Schema property
 var schema_prop_key = new Set();
 schema_prop_key.add(com.KEY_LEAF);
 schema_prop_key.add(com.KEY_AUGMENT);
 
-    //YANG: typedef -> Schema SimpleType
-    //YANG: grouping -> Schema RecordType
+//YANG: typedef -> Schema SimpleType
+//YANG: grouping -> Schema RecordType
 var schema_yang_type_mapping = new Map([
-    [com.KEY_TYPEDEF, "SimpleType"],
-    [com.KEY_GROUPING, "RecordType"]
-    //[com.KEY_AUGMENT, "RecordType"]
+    [com.KEY_TYPEDEF, com.KEY_SIMPLETYPE],
+    [com.KEY_GROUPING, com.KEY_RECORDTYPE],
+    [com.KEY_LIST, com.KEY_RECORDTYPE],
+    [com.KEY_AUGMENT, com.KEY_AUGMENTTYPE]
     //["container", "schema"],
 ]);
 
@@ -95,6 +96,7 @@ module.exports = {
             var propNodes = [];
 
             var i;
+            //One level loop, no recursive
             for (i = 0; i < node.subNodes.length; i++) {
                 var sub_node = node.subNodes[i];
                 //p("sub_node type is: " + sub_node.type);
@@ -104,6 +106,37 @@ module.exports = {
                 }
             }
             return propNodes;
+        }
+    },
+
+    //Parser Object
+    AugmentType: {
+        //return augment type, /exa:config/exa:profile, system...
+        fetchAugmentType: function (node) {
+            //Might be profile, system, interface or others
+            var arg = node.name;
+            var key = node.type;
+            p("Try to get Augment type and arg: " + arg);
+            //get all properties from the node
+            //If it if not started with /exa:, ignore it, for now.
+            var ary = arg.match(/^\/exa:/g);
+            if (null == ary) {
+                pNoS("Augment formation does not supported. It is: " + arg);
+                return null;
+            } else {
+                p("Augment formation supported. It is: " + arg);
+                switch (arg) {
+                    case com.KEY_EXA_CONFIG_SYSTEM:
+                        p("It is a system node.");
+                        return com.KEY_EXA_CONFIG_SYSTEM;
+                    case com.KEY_EXA_CONFIG_PROFILE:
+                        p("It is a profile node.");
+                        return com.KEY_EXA_CONFIG_PROFILE;
+                    default:
+                        pNoS("Sorry, arg " + arg + " is not supported now.");
+                        return null;
+                }
+            }
         }
     },
 
@@ -170,7 +203,14 @@ module.exports = {
                     json_prop.defaultValue = +ary[0];
                 }
             }
-        }//default
+        },//default
+        when: {
+            yang2json: function (node, json_prop) {
+                var arg = node.name;
+                var key = node.type;
+                pNoS("Sorry, type 'when' is not supported now.");
+            }
+        }//when
     }//Property
 }
 
